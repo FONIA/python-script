@@ -71,6 +71,23 @@ def redis_install():
             os.system("mv /usr/local/redis-%s /usr/local/redis" % release)
             os.system("cd /usr/local/redis && make && make install PREFIX=/usr/local/redis")
             os.system("ln -s /usr/local/redis/bin/redis-cli /usr/bin/redis-cli")
+            os.system("mv /usr/local/redis/redis.conf /usr/local/redis/bin/")
+            os.system("sed -i 's/daemonize no/daemonize yes/g' /usr/local/redis/bin/redis.conf")
+            playload="""
+[Unit]
+Description=redis-server
+After=network.target
+[Service]
+Type=forking
+ExecStart=/usr/local/redis/bin/redis-server /usr/local/redis/bin/redis.conf
+PrivateTmp=true
+[Install]
+WantedBy=multi-user.target
+"""
+            os.system("cat>/etc/systemd/system/redis.service<<EOF%sEOF" % playload)
+            os.system("systemctl daemon-reload")
+            os.system("systemctl start redis")
+            os.system("systemctl enable redis")
             chk = os.system("redis-cli -v > /dev/null 2>&1")
             if not chk:
                 color_print("已安装redis")
